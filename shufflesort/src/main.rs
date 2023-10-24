@@ -4,23 +4,8 @@ const ALPHABETS: usize = 26;
 
 /// Creates an array of `u8` where each element is set to its index (`a[i] == i`).
 ///
-/// e.g. `enumerate::<N>() == [1u8, 2u8, ..., N-1]`
+/// Replacement for `std::array::from_fn(|i| i)` which cannot be used in `const`.
 const fn enumerate<const N: usize>() -> [u8; N] {
-    //! # FAQ (the voices inside my head)
-    //!
-    //! 1. Isn't this supported by the language?
-    //!
-    //! Well yes, but actually no. We have:
-    //!
-    //! - `core::array::from_fn(|i| i)` ...except it's not `const`.
-    //! - `(0..N).collect()` ...except it only works for `Vec`.
-    //!
-    //! Until const trait and fixed sized iterator stuffs are stabilized, this is all we've got.
-    //!
-    //! 2. `T` instead of `u8`?
-    //!
-    //! We need to convert `usize` index to `T` value in that case.
-    //! Which requires `From`, which is a trait, which, cannot be `const`.
     let mut arr = [0; N];
     let mut i = 0;
     while i < arr.len() {
@@ -34,16 +19,18 @@ const fn enumerate<const N: usize>() -> [u8; N] {
 ///
 /// # Panics
 ///
-/// Given array must have even length (`N % 2 == 0`).
+/// Given array must have an even length (`N % 2 == 0`).
 const fn shuffle<const N: usize>(mut arr: [u8; N]) -> [u8; N] {
-    assert!(N % 2 == 0, "given array must have even length");
+    assert!(N % 2 == 0, "input array should have an even length");
 
+    // 1. swap each `2K`th element with `2K+1`th element
     let mut i = 0;
     while i < N {
         (arr[i], arr[i + 1]) = (arr[i + 1], arr[i]);
         i += 2;
     }
 
+    // 2. swap the first half with the last half
     let mut i = 0;
     while i < N / 2 {
         (arr[i], arr[N / 2 + i]) = (arr[N / 2 + i], arr[i]);
@@ -53,8 +40,28 @@ const fn shuffle<const N: usize>(mut arr: [u8; N]) -> [u8; N] {
     arr
 }
 
+/// Creates a bigger array by padding zeros to the beginning of the input array.
+///
+/// Replacement for `b[(B - A)..].copy_from_slice(&a)` which cannot be used in `const`.
+///
+/// # Panics
+///
+/// Output array should have a bigger length (`B >= A`).
+const fn pad_zeros<const A: usize, const B: usize>(arr: &[u8; A]) -> [u8; B] {
+    assert!(B >= A, "output array should have a bigger length");
+    let mut padded = [0; B];
+    let mut i = 0;
+    while i < A {
+        padded[B - A + i] = arr[i];
+        i += 1;
+    }
+    padded
+}
+
+#[inline]
 fn main() {
     const A: [u8; ALPHABETS] = shuffle(enumerate());
+    const B: [u8; ALPHABETS + 'a' as usize] = pad_zeros(&A);
 
-    println!("{:?}", std::str::from_utf8(&A.map(|i| i + 'a' as u8)).unwrap());
+    println!("{:?}", std::str::from_utf8(&B.map(|i| i + 'a' as u8)));
 }
