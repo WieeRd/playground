@@ -1,15 +1,13 @@
 #![doc = include_str!("../README.md")]
 
-const ALPHABETS: usize = 26;
-
 /// Creates an array of `u8` where each element is set to its index (`a[i] == i`).
 ///
-/// Replacement for `std::array::from_fn(|i| i)` which cannot be used in `const`.
-const fn enumerate<const N: usize>() -> [u8; N] {
+/// Replacement for `std::array::from_fn` which cannot be used in `const`.
+const fn enumerate<const N: usize>(offset: u8) -> [u8; N] {
     let mut arr = [0; N];
     let mut i = 0;
     while i < arr.len() {
-        arr[i] = i as u8;
+        arr[i] = offset + i as u8;
         i += 1;
     }
     arr
@@ -19,7 +17,7 @@ const fn enumerate<const N: usize>() -> [u8; N] {
 ///
 /// # Panics
 ///
-/// Given array must have an even length (`N % 2 == 0`).
+/// Input array should have an even length (`N % 2 == 0`).
 const fn shuffle<const N: usize>(mut arr: [u8; N]) -> [u8; N] {
     assert!(N % 2 == 0, "input array should have an even length");
 
@@ -44,11 +42,11 @@ const fn shuffle<const N: usize>(mut arr: [u8; N]) -> [u8; N] {
 ///
 /// # Panics
 ///
-/// Given array should not contain a value bigger than `N`.
-const fn transpose<const N: usize>(arr: &[u8; N]) -> [u8; N] {
-    let mut transposed = [0; N];
+/// Input array should not contain a value bigger than output array's length.
+const fn transpose<const A: usize, const B: usize>(arr: &[u8; A]) -> [u8; B] {
+    let mut transposed = [0; B];
     let mut i = 0;
-    while i < N {
+    while i < A {
         let (index, value) = (i as u8, arr[i] as usize);
         transposed[value] = index;
         i += 1;
@@ -56,28 +54,29 @@ const fn transpose<const N: usize>(arr: &[u8; N]) -> [u8; N] {
     transposed
 }
 
-/// Creates a bigger array by padding zeros to the beginning of the given array.
-///
-/// Replacement for `b[(B - A)..].copy_from_slice(&a)` which cannot be used in `const`.
-///
-/// # Panics
-///
-/// Output array should have a bigger length (`B >= A`).
-const fn pad_zeros<const A: usize, const B: usize>(arr: &[u8; A]) -> [u8; B] {
-    assert!(B >= A, "output array should have a bigger length");
-    let mut padded = [0; B];
-    let mut i = 0;
-    while i < A {
-        padded[B - A + i] = arr[i];
-        i += 1;
-    }
-    padded
+#[inline]
+fn sort_key(c: &u8) -> u8 {
+    debug_assert!(
+        ('a'..='z').contains(&(*c as char)),
+        "input byte should be within [a-z] range"
+    );
+
+    // "abcdefghijklmnopqrstuvwxyz"
+    const ALPHABETS: [u8; 26] = enumerate('a' as u8);
+
+    // "mporqtsvuxwzybadcfehgjilkn"
+    const SHUFFLED: [u8; 26] = shuffle(ALPHABETS);
+
+    // SORT_KEY['m' as usize] == 0
+    const SORT_KEY: [u8; 26 + 'a' as usize] = transpose(&SHUFFLED);
+
+    SORT_KEY[*c as usize]
 }
 
-#[inline]
 fn main() {
-    const A: [u8; ALPHABETS] = shuffle(enumerate());
-    const B: [u8; ALPHABETS + 'a' as usize] = pad_zeros(&A);
-
-    println!("{:?}", std::str::from_utf8(&B.map(|i| i + 'a' as u8)));
+    let mut alphabets = String::from("abcdefghijklmnopqrstuvwxyz");
+    unsafe {
+        alphabets.as_bytes_mut().sort_unstable_by_key(sort_key);
+    }
+    println!("{}", alphabets);
 }
