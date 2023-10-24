@@ -40,7 +40,23 @@ const fn shuffle<const N: usize>(mut arr: [u8; N]) -> [u8; N] {
     arr
 }
 
-/// Creates a bigger array by padding zeros to the beginning of the input array.
+/// Indices to values, values to indices. `a[i] = v` to `b[v] = i`.
+///
+/// # Panics
+///
+/// Given array should not contain a value bigger than `N`.
+const fn transpose<const N: usize>(arr: &[u8; N]) -> [u8; N] {
+    let mut transposed = [0; N];
+    let mut i = 0;
+    while i < N {
+        let (index, value) = (i as u8, arr[i] as usize);
+        transposed[value] = index;
+        i += 1;
+    }
+    transposed
+}
+
+/// Creates a bigger array by padding zeros to the beginning of the given array.
 ///
 /// Replacement for `b[(B - A)..].copy_from_slice(&a)` which cannot be used in `const`.
 ///
