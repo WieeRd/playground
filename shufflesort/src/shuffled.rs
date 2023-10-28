@@ -4,7 +4,7 @@
 //!
 //! # Was It Worth It
 //!
-//! Well, I *could* have...
+//! Now, I *could* have...
 //!
 //! 1. Hardcode the lookup table like a normal person
 //! 2. Just generate the table in runtime like a sane person
@@ -96,4 +96,16 @@ pub unsafe fn sort_key(c: &u8) -> u8 {
     const LOOKUP: [u8; 'a' as usize + 26] = transpose(&SHUFFLED);
 
     *LOOKUP.get_unchecked(*c as usize)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn shuffle() {
+        let mut alphabets = *b"abcdefghijklmnopqrstuvwxyz";
+        alphabets.sort_unstable_by_key(|c| unsafe { sort_key(c) });
+        assert_eq!(alphabets, *b"mporqtsvuxwzybadcfehgjilkn");
+    }
 }
