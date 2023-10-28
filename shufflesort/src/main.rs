@@ -2,7 +2,7 @@
 
 /// Creates an array of `u8` where each element is set to its index (`a[i] == i`).
 ///
-/// Replacement for `std::array::from_fn` which cannot be used in `const`.
+/// Replacement for `std::array::from_fn(|i| i + offset)` which cannot be used in `const`.
 const fn enumerate<const N: usize>(offset: u8) -> [u8; N] {
     let mut arr = [0; N];
     let mut i = 0;
@@ -40,11 +40,13 @@ const fn shuffle<const N: usize>(mut arr: [u8; N]) -> [u8; N] {
 
 /// Indices to values, values to indices. `a[i] = v` to `b[v] = i`.
 ///
+/// Indices of the output array that are not present in the input array will be filled with `0xFF`.
+///
 /// # Panics
 ///
 /// Input array should not contain a value bigger than output array's length.
 const fn transpose<const A: usize, const B: usize>(arr: &[u8; A]) -> [u8; B] {
-    let mut transposed = [0; B];
+    let mut transposed = [0xFF; B];
     let mut i = 0;
     while i < A {
         let (index, value) = (i as u8, arr[i] as usize);
@@ -54,29 +56,38 @@ const fn transpose<const A: usize, const B: usize>(arr: &[u8; A]) -> [u8; B] {
     transposed
 }
 
+/// Queries the lookup table for the shuffled sorting order.
+/// 
+/// # Safety
+///
+/// Input byte should be within `[a-z]` range.
 #[inline]
-fn sort_key(c: &u8) -> u8 {
+unsafe fn sort_key(c: &u8) -> u8 {
     debug_assert!(
         ('a'..='z').contains(&(*c as char)),
         "input byte should be within [a-z] range"
     );
 
-    // "abcdefghijklmnopqrstuvwxyz"
+    // Now, I *could* have hardcoded b"abcd..." like a normal person,
+    // but no, I'm gonna do what's called pro-grammer move and write a whole new function
+    // that automates the process and avoid filthy manual labour of typing out 26 characters
     const ALPHABETS: [u8; 26] = enumerate('a' as u8);
 
     // "mporqtsvuxwzybadcfehgjilkn"
     const SHUFFLED: [u8; 26] = shuffle(ALPHABETS);
 
-    // SORT_KEY['m' as usize] == 0
-    const SORT_KEY: [u8; 26 + 'a' as usize] = transpose(&SHUFFLED);
+    // LOOKUP['m' as usize] == 0
+    const LOOKUP: [u8; 'a' as usize + 26] = transpose(&SHUFFLED);
 
-    SORT_KEY[*c as usize]
+    *LOOKUP.get_unchecked(*c as usize)
 }
 
 fn main() {
     let mut alphabets = String::from("abcdefghijklmnopqrstuvwxyz");
     unsafe {
-        alphabets.as_bytes_mut().sort_unstable_by_key(sort_key);
+        alphabets
+            .as_bytes_mut()
+            .sort_unstable_by_key(|c| sort_key(c));
     }
     println!("{}", alphabets);
 }
