@@ -14,20 +14,7 @@
 //! But no. I had to do what's called pro-grammer move, avoiding filthy manual labour of typing out
 //! whopping 26 characters manually and automating the entire process with extra 100 lines of code.
 
-/// Creates an array of `u8` where each element is set to its index + offset (`a[i] == i + offset`).
-///
-/// e.g. `enumerate::<4>(2)` == `[2, 3, 4, 5]`
-///
-/// Replacement for `std::array::from_fn(|i| i + offset)` which cannot be used in `const`.
-pub const fn enumerate<const N: usize>(offset: u8) -> [u8; N] {
-    let mut arr = [0; N];
-    let mut i = 0;
-    while i < arr.len() {
-        arr[i] = offset + i as u8;
-        i += 1;
-    }
-    arr
-}
+// REFACTOR: MAYBE: create `struct Shuffle` and put `sort_key()` as a method
 
 /// Shuffles the given array with the steps described in [`README.md`](../index.html).
 ///
@@ -85,15 +72,12 @@ pub unsafe fn sort_key(c: &u8) -> u8 {
         "input byte should be an ASCII lowercase character"
     );
 
-    // "abcdefghijklmnopqrstuvwxyz"
-    const ALPHABETS: [u8; 26] = enumerate(b'a');
-
-    // "mporqtsvuxwzybadcfehgjilkn"
-    const SHUFFLED: [u8; 26] = shuffle(ALPHABETS);
+    const ALPHABETS: [u8; 26] = *b"abcdefghijklmnopqrstuvwxyz";
+    const SORT_ORDER: [u8; 26] = shuffle(ALPHABETS);
 
     // padded with 'a' bytes, allowing us to use the character directly as an index
     // e.g. `LOOKUP['m' as usize] == 0`
-    const LOOKUP: [u8; 'a' as usize + 26] = transpose(&SHUFFLED);
+    const LOOKUP: [u8; 'a' as usize + 26] = transpose(&SORT_ORDER);
 
     *LOOKUP.get_unchecked(*c as usize)
 }
