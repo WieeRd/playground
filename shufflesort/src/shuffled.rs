@@ -77,16 +77,16 @@ pub const fn transpose<const A: usize, const B: usize>(arr: &[u8; A]) -> [u8; B]
 ///
 /// # Safety
 ///
-/// Input byte should be within `[a-z]` range.
+/// Input byte should be an ASCII lowercase character.
 #[inline]
 pub unsafe fn sort_key(c: &u8) -> u8 {
     debug_assert!(
-        ('a'..='z').contains(&(*c as char)),
-        "input byte should be within [a-z] range"
+        c.is_ascii_lowercase(),
+        "input byte should be an ASCII lowercase character"
     );
 
     // "abcdefghijklmnopqrstuvwxyz"
-    const ALPHABETS: [u8; 26] = enumerate('a' as u8);
+    const ALPHABETS: [u8; 26] = enumerate(b'a');
 
     // "mporqtsvuxwzybadcfehgjilkn"
     const SHUFFLED: [u8; 26] = shuffle(ALPHABETS);
