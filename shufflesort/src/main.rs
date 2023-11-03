@@ -19,29 +19,28 @@ const _WORD_LEN_MAX: usize = 20;
 
 fn main() -> Result<(), io::Error> {
     let _input = {
-        // read from argv[1] or "input.txt"
+        // argv[1] or "input.txt" by default
         let mut file = match env::args_os().nth(1) {
             Some(path) => File::open(path)?,
             None => File::open("input.txt")?,
         };
-        let size = file.metadata()?.len() as usize;
+        let fsize = file.metadata()?.len() as usize;
 
-        let mut bytes = Vec::with_capacity(size + 1);
-        file.read_to_end(&mut bytes)?;
+        // reserve 1 extra byte for newline
+        let mut buf = Vec::with_capacity(fsize + 1);
+        file.read_to_end(&mut buf)?;
 
         // make sure the input ends with a newline
-        if bytes.last() != Some(&b'\n') {
-            bytes.push(b'\n');
+        // for technical reasons I'm too lazy to elaborate
+        if buf.last() != Some(&b'\n') {
+            buf.push(b'\n');
         }
 
-        bytes
+        buf
     };
 
-    // use std::fs;
-    // let _input = match env::args_os().nth(1) {
-    //     Some(path) => fs::read(path)?,
-    //     None => fs::read("input.txt")?,
-    // };
+    // let words: Vec<word::Word>;
+    // words.sort_unstable();
 
     Ok(())
 }
