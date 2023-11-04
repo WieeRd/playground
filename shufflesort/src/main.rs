@@ -3,13 +3,13 @@
 use std::{
     env,
     fs::File,
-    io::{self, Read},
+    io::{self, Read, Write},
 };
 
-const _WORD_COUNT: usize = 1_000_000;
+const WORD_COUNT: usize = 1_000_000;
 const _WORD_LEN_MIN: usize = 5;
 const WORD_LEN_MAX: usize = 20;
-const CHAR_RADIX: u128 = 26; // PERF: set radix to 32 for faster hashing
+const CHAR_RADIX: u128 = 32; // PERF: set radix to 32 for faster hashing
 
 /// Shuffles the given array with the steps described in [`README.md`](index.html).
 ///
@@ -121,7 +121,7 @@ impl<'a> Iterator for WordIter<'a> {
 }
 
 fn main() -> Result<(), io::Error> {
-    let _input = {
+    let input = {
         // argv[1] or "input.txt" by default
         let mut file = match env::args_os().nth(1) {
             Some(path) => File::open(path)?,
@@ -142,8 +142,15 @@ fn main() -> Result<(), io::Error> {
         buf
     };
 
-    // let words: Vec<word::Word>;
-    // words.sort_unstable();
+    let mut words = Vec::with_capacity(WORD_COUNT);
+    words.extend(WordIter(&input));
+    words.sort_unstable_by_key(|w| w.hash);
+
+    // PERF: ASAP: use raw stdout someout
+    let mut handle = io::stdout().lock();
+    for word in words {
+        handle.write(word.source)?;
+    }
 
     Ok(())
 }
