@@ -146,11 +146,13 @@ fn main() -> Result<(), io::Error> {
     words.extend(WordIter(&input));
     words.sort_unstable_by_key(|w| w.hash);
 
-    // PERF: ASAP: use raw stdout someout
-    let mut handle = io::stdout().lock();
+    // PERF: ASAP: use raw stdout somehow
+    let stdout = io::stdout().lock();
+    let mut writer = BufWriter::with_capacity(8192, stdout);
     for word in words {
-        handle.write(word.source)?;
+        writer.write(word.source)?;
     }
+    writer.flush()?;
 
     Ok(())
 }
