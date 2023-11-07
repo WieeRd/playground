@@ -1,9 +1,11 @@
 #![doc = include_str!("../README.md")]
 
+mod stdoutraw;
+
 use std::{
     env,
     fs::File,
-    io::{self, Read, Write},
+    io::{self, BufWriter, Read, Write},
 };
 
 const WORD_COUNT: usize = 1_000_000;
@@ -146,9 +148,9 @@ fn main() -> Result<(), io::Error> {
     words.extend(WordIter(&input));
     words.sort_unstable_by_key(|w| w.hash);
 
-    // PERF: ASAP: use raw stdout somehow
-    let stdout = io::stdout().lock();
-    let mut writer = BufWriter::with_capacity(8192, stdout);
+    // let stdout = io::stdout().lock();
+    let stdout = stdoutraw::stdoutraw();
+    let mut writer = BufWriter::new(stdout);
     for word in words {
         writer.write(word.source)?;
     }
