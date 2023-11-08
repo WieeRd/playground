@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-mod stdoutraw;
+mod stdout_raw;
 
 use std::{
     env,
@@ -149,7 +149,7 @@ fn main() -> Result<(), io::Error> {
     words.sort_unstable_by_key(|w| w.hash);
 
     // let stdout = io::stdout().lock();
-    let stdout = stdoutraw::stdoutraw();
+    let stdout = stdout_raw::stdout_raw();
     let mut writer = BufWriter::new(stdout);
     for word in words {
         writer.write(word.source)?;
