@@ -59,7 +59,7 @@ struct Word<'a> {
 fn main() -> Result<(), io::Error> {
     let alphabets = b"abcdefghijklmnopqrstuvwxyz";
     let sort_order = shuffle(*alphabets);
-    let lookup_table: [u8; 'a' as usize + 1] = transpose(&sort_order);
+    let lookup_table: [u8; 'a' as usize + 26] = transpose(&sort_order);
 
     let sort_key = |b: &u8| {
         debug_assert!(
@@ -67,7 +67,7 @@ fn main() -> Result<(), io::Error> {
             "input byte should be an ASCII lowercase character"
         );
 
-        unsafe { lookup_table.get_unchecked(*b as usize) }
+        unsafe { *lookup_table.get_unchecked(*b as usize) }
     };
 
     let input = {
@@ -91,17 +91,35 @@ fn main() -> Result<(), io::Error> {
         buf
     };
 
-    // let mut words = Vec::with_capacity(WORD_COUNT);
-    // words.extend(WordIter(&input));
-    // words.sort_unstable_by_key(|w| w.hash);
+    let mut words = Vec::with_capacity(WORD_COUNT);
+    let mut remaining = input.as_slice();
+    while !remaining.is_empty() {
+        let mut hash = 0;
+        let len = remaining
+            .iter()
+            .take_while(|b| **b != b'\n')
+            .inspect(|b| {
+                hash *= CHAR_RADIX;
+                hash += sort_key(b) as u128;
+            })
+            .count();
+        hash *= CHAR_RADIX.pow((WORD_LEN_MAX - len) as u32);
 
-    // // let stdout = io::stdout().lock();
-    // let stdout = stdout_raw::stdout_raw();
-    // let mut writer = BufWriter::new(stdout);
-    // for word in words {
-    //     writer.write(word.source)?;
-    // }
-    // writer.flush()?;
+        let source;
+        (source, remaining) = remaining.split_at(len);
+        words.push(Word { hash, source })
+    }
+    
+
+    words.sort_unstable_by_key(|w| w.hash);
+
+    // let stdout = io::stdout().lock();
+    let stdout = stdout_raw::stdout_raw();
+    let mut writer = BufWriter::new(stdout);
+    for word in words {
+        writer.write(word.source)?;
+    }
+    writer.flush()?;
 
     Ok(())
 }
