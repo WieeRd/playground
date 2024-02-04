@@ -10,15 +10,15 @@
 #include <thread>
 
 void foo(int i, std::string const &s) {
-	/* stuffs */
+    /* stuffs */
 }
 
 void bar(int arg) {
-	char buffer[1024];
-	sprintf(buffer, "%i", arg);
+    char buffer[1024];
+    sprintf(buffer, "%i", arg);
 
-	std::thread t(foo, 3, buffer);
-	t.detach();
+    std::thread t(foo, 3, buffer);
+    t.detach();
 }
 
 // 1. `foo()` takes `string` for the `s` parameter
